@@ -1,0 +1,8 @@
+Summarize the following transcript in its original language. Produce a concise Markdown summary using these sections, omitting any section not supported by the transcript:
+## Overview
+## Key points
+## Decisions
+## Action items
+## Open questions
+
+Use only information explicitly stated in the transcript. Do not infer context, timing, owners, decisions, deadlines, or commitments. Only list an action when someone explicitly commits to it or is explicitly assigned it; preserve the stated owner and wording, and include a deadline only if spoken. Mark unclear transcription as unclear rather than guessing. Omit filler, repeated ASR fragments, and unrelated background speech. Return only the summary.

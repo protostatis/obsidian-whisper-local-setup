@@ -1,0 +1,115 @@
+--- a/main.js
++++ b/main.js
+@@ -2999,0 +3000,57 @@
++const LOCAL_AUDIO_CHUNK_MS = 5 * 60 * 1e3;
++function isLoopbackWhisperEndpoint(apiUrl) {
++  try {
++    const url = new URL(apiUrl);
++    const host = url.hostname.replace(/^\[|\]$/g, "");
++    return ["localhost", "127.0.0.1", "::1"].includes(host) && /\/v1\/audio\/transcriptions\/?$/.test(url.pathname);
++  } catch {
++    return false;
++  }
++}
++async function getAudioDurationSeconds(blob) {
++  const mediaUrl = URL.createObjectURL(blob);
++  const media = new Audio();
++  media.preload = "metadata";
++  let duration = Number.NaN;
++  try {
++    duration = await new Promise((resolve) => {
++      let timeout;
++      const finish = (value) => {
++        window.clearTimeout(timeout);
++        media.removeEventListener("loadedmetadata", onLoaded);
++        media.removeEventListener("error", onError);
++        resolve(value);
++      };
++      const onLoaded = () => finish(media.duration);
++      const onError = () => finish(Number.NaN);
++      media.addEventListener("loadedmetadata", onLoaded, { once: true });
++      media.addEventListener("error", onError, { once: true });
++      timeout = window.setTimeout(() => finish(Number.NaN), 5e3);
++      media.src = mediaUrl;
++    });
++  } finally {
++    media.removeAttribute("src");
++    media.load();
++    URL.revokeObjectURL(mediaUrl);
++  }
++  if (Number.isFinite(duration) && duration > 0) {
++    return duration;
++  }
++  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
++  if (!AudioContextClass) {
++    throw new Error("This app cannot read the audio duration needed for safe local chunking");
++  }
++  let context;
++  try {
++    context = new AudioContextClass({ sampleRate: 16e3 });
++  } catch {
++    context = new AudioContextClass();
++  }
++  try {
++    const decoded = await context.decodeAudioData(await blob.arrayBuffer());
++    return decoded.duration;
++  } finally {
++    await context.close().catch(() => {
++    });
++  }
++}
+@@ -3141 +3198 @@
+-      const response = await axios_default.post(
++      const sendTranscriptionRequest = (payload) => axios_default.post(
+@@ -3143 +3200 @@
+-        formData,
++        payload,
+@@ -3153 +3210,47 @@
+-      const originalText = response.data.text;
++      let originalText;
++      if (isLoopbackWhisperEndpoint(this.plugin.settings.apiUrl)) {
++        const audioDurationSeconds = await getAudioDurationSeconds(blob);
++        const audioDurationMs = Math.ceil(audioDurationSeconds * 1e3);
++        if (!Number.isFinite(audioDurationMs) || audioDurationMs <= 0) {
++          throw new Error("Could not determine the recording duration; the saved audio is safe to retry");
++        }
++        const totalChunks = Math.ceil(audioDurationMs / LOCAL_AUDIO_CHUNK_MS);
++        if (totalChunks > 1) {
++          const chunkTexts = [];
++          if (this.plugin.settings.debugMode) {
++            console.info(`[Whisper] Local long-audio job: ${totalChunks} chunks, ${Math.round(audioDurationMs / 1e3)} seconds`);
++          }
++          for (let index = 0; index < totalChunks; index++) {
++            const offsetMs = index * LOCAL_AUDIO_CHUNK_MS;
++            const durationMs = Math.min(LOCAL_AUDIO_CHUNK_MS, audioDurationMs - offsetMs);
++            formData.set("offset_t", String(offsetMs));
++            formData.set("duration", String(durationMs));
++            const startedAt = Date.now();
++            if (this.plugin.settings.debugMode) {
++              new import_obsidian2.Notice(`Transcribing part ${index + 1}/${totalChunks}...`);
++              console.info(`[Whisper] Starting local part ${index + 1}/${totalChunks}: offset=${offsetMs}ms duration=${durationMs}ms`);
++            }
++            try {
++              const response = await sendTranscriptionRequest(formData);
++              const chunkText = response.data && typeof response.data.text === "string" ? response.data.text.trim() : "";
++              chunkTexts.push(chunkText);
++              if (this.plugin.settings.debugMode) {
++                console.info(`[Whisper] Completed local part ${index + 1}/${totalChunks} in ${((Date.now() - startedAt) / 1e3).toFixed(1)}s; chars=${chunkText.length}`);
++              }
++            } catch (err) {
++              const status = err && err.response ? err.response.status : void 0;
++              const serverError = err && err.response && err.response.data && typeof err.response.data.error === "string" ? err.response.data.error : "";
++              const detail = serverError || (err instanceof Error ? err.message : String(err));
++              console.error(`[Whisper] Local part ${index + 1}/${totalChunks} failed`, { offsetMs, durationMs, status, detail });
++              throw new Error(`Part ${index + 1}/${totalChunks} failed${status ? ` (HTTP ${status})` : ""}: ${detail}`);
++            }
++          }
++          originalText = chunkTexts.filter(Boolean).join("\n\n");
++        } else {
++          const response = await sendTranscriptionRequest(formData);
++          originalText = response.data.text;
++        }
++      } else {
++        const response = await sendTranscriptionRequest(formData);
++        originalText = response.data.text;
++      }
