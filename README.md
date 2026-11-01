@@ -104,7 +104,7 @@ python3 ./scripts/configure-summary.py \
   --model qwen3.5:9b
 ```
 
-The script verifies the model through the loopback endpoint, backs up the existing plugin settings beside `data.json` with restrictive permissions, and sets the local Whisper endpoint, vault paths, chunk-progress diagnostics, and post-processing options. It preserves unrelated settings and keeps the raw transcript. New notes are created under `Inbox/Transcripts`; to use another Ollama model, pass its exact tag with `--model`.
+The script verifies the model through the loopback endpoint, backs up the existing plugin settings beside `data.json` with restrictive permissions, and sets the local Whisper endpoint, vault paths, chunk-progress diagnostics, and post-processing options. Its default prompt produces concise but substantive notes that retain salient discussion details, state decisions explicitly, and separate decisions from proposals and open questions. It preserves unrelated settings and keeps the raw transcript. New notes are created under `Inbox/Transcripts`; to use another Ollama model, pass its exact tag with `--model`.
 
 Save open notes and reload Obsidian before recording. Do not reload during an active recording.
 
