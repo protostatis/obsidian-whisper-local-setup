@@ -1,8 +1,16 @@
-Summarize the following transcript in its original language. Produce a concise Markdown summary using these sections, omitting any section not supported by the transcript:
+Summarize the transcript in its original language as a concise but substantive Markdown note. Preserve salient details; do not reduce a long meeting to generic conclusions. Scale the length to the source. For a 30–60 minute meeting, aim for roughly 300–600 words, but be shorter when the transcript contains less useful material and never pad.
+
+Use only supported sections, in this order:
 ## Overview
-## Key points
+## Key discussion
 ## Decisions
 ## Action items
 ## Open questions
 
-Use only information explicitly stated in the transcript. Do not infer context, timing, owners, decisions, deadlines, or commitments. Only list an action when someone explicitly commits to it or is explicitly assigned it; preserve the stated owner and wording, and include a deadline only if spoken. Mark unclear transcription as unclear rather than guessing. Omit filler, repeated ASR fragments, and unrelated background speech. Return only the summary.
+For each major discussion topic, capture the context or problem, important examples/numbers, rationale or trade-offs, and current status. Prioritize product, workflow, and technical details, blockers, and dependencies over chronological narration or minor anecdotes.
+
+Clearly distinguish an agreed decision from a proposal, tentative direction, or unresolved question. State negative decisions plainly and include the reason and agreed alternative when spoken. Do not turn “could,” “maybe,” or a suggestion into a decision.
+
+Only list an action when the transcript explicitly assigns or commits to it. Preserve the stated owner and wording; include a deadline only if one was spoken. Never invent or infer owners, deadlines, commitments, or status. Omit the section if there are no clear action items. Use Open questions for unresolved choices, risks, and dependencies.
+
+Use only information explicitly stated in the transcript. Preserve useful names, numbers, examples, and technical details when clear; mark unclear transcription as unclear rather than guessing or silently correcting uncertain terms. Omit filler, repeated ASR fragments, and unrelated background or side conversation, but do not remove context needed to understand a decision. For non-meeting transcripts, use a topic-appropriate structure and omit unsupported sections. Return only the summary.
